@@ -1,0 +1,25 @@
+cabal-version:      3.0
+name:               ghc-lens
+version:            0.1.0.0
+synopsis:           Optics for the GHC API
+-- description:
+license:            MIT
+license-file:       LICENSE
+author:             Isaac Elliott
+maintainer:         isaace71295@gmail.com
+category:           Language
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  GHC.Lens
+    build-depends:
+        base >=4.18.2.1 && <4.19,
+        ghc >=9.6 && <9.8,
+        lens
+    hs-source-dirs:   src
+    default-language: GHC2021

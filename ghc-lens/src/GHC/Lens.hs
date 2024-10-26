@@ -85,6 +85,11 @@ module GHC.Lens
   , rec_flds
   , rec_dotdot
 
+    -- ** LHsQTyVars
+
+    -- | c.f. 'LHsQTyVars'
+  , hsq_explicit
+
     -- ** Match
 
     -- | c.f. 'GHC.Match'
@@ -331,3 +336,6 @@ _TcOcc = prism' mkTcOcc (\a -> if isTcOcc a then Just $ occNameString a else Not
 
 _TyConName :: Prism' GHC.RdrName String
 _TyConName = _Unqual . _TcOcc
+
+hsq_explicit :: Lens' (GHC.LHsQTyVars pass) [GHC.LHsTyVarBndr () pass]
+hsq_explicit = lens GHC.hsq_explicit (\x a -> x{GHC.hsq_explicit = a})

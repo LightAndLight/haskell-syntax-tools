@@ -350,7 +350,8 @@ _TyConName = _Unqual . _TcOcc
 hsq_explicit :: Lens' (GHC.LHsQTyVars pass) [GHC.LHsTyVarBndr () pass]
 hsq_explicit = lens GHC.hsq_explicit (\x a -> x{GHC.hsq_explicit = a})
 
-tyVarBndrVar :: GHC.XXTyVarBndr pass ~ GHC.DataConCantHappen => Lens' (GHC.HsTyVarBndr flag pass) (GHC.LIdP pass)
+tyVarBndrVar ::
+  GHC.XXTyVarBndr pass ~ GHC.DataConCantHappen => Lens' (GHC.HsTyVarBndr flag pass) (GHC.LIdP pass)
 tyVarBndrVar =
   lens
     ( \case

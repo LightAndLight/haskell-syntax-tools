@@ -77,6 +77,7 @@ module GHC.Lens
 
     -- | c.f. 'GHC.HsModule'
   , hsmodDecls
+  , hsmodImports
 
     -- ** HsRecFields
 
@@ -232,6 +233,9 @@ l_val = lens (\(GHC.L _ a) -> a) (\(GHC.L l _) b -> GHC.L l b)
 
 hsmodDecls :: Lens' (GHC.HsModule p) [GHC.LHsDecl p]
 hsmodDecls = lens GHC.hsmodDecls (\x a -> x{GHC.hsmodDecls = a})
+
+hsmodImports :: Lens' (GHC.HsModule p) [GHC.LImportDecl p]
+hsmodImports = lens GHC.hsmodImports (\x a -> x{GHC.hsmodImports = a})
 
 data ValDArgs p = ValDArgs {_valD_ext :: GHC.XValD p, _valD_bind :: GHC.HsBind p}
 

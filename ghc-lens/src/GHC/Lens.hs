@@ -90,6 +90,11 @@ module GHC.Lens
     -- | c.f. 'LHsQTyVars'
   , hsq_explicit
 
+    -- ** HsTyVarBndr
+
+    -- | c.f. 'GHC.HsTyVarBndr'
+  , tyVarBndrVar
+
     -- ** Match
 
     -- | c.f. 'GHC.Match'
@@ -339,3 +344,16 @@ _TyConName = _Unqual . _TcOcc
 
 hsq_explicit :: Lens' (GHC.LHsQTyVars pass) [GHC.LHsTyVarBndr () pass]
 hsq_explicit = lens GHC.hsq_explicit (\x a -> x{GHC.hsq_explicit = a})
+
+tyVarBndrVar :: GHC.XXTyVarBndr pass ~ GHC.DataConCantHappen => Lens' (GHC.HsTyVarBndr flag pass) (GHC.LIdP pass)
+tyVarBndrVar =
+  lens
+    ( \case
+        GHC.UserTyVar _ext _flag name -> name
+        GHC.KindedTyVar _ext _flag name _kind -> name
+    )
+    ( \x name ->
+        case x of
+          GHC.UserTyVar ext flag _ -> GHC.UserTyVar ext flag name
+          GHC.KindedTyVar ext flag _ kind -> GHC.KindedTyVar ext flag name kind
+    )

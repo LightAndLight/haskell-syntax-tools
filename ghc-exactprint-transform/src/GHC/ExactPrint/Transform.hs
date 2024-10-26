@@ -4,17 +4,32 @@ module GHC.ExactPrint.Transform
   ( addTrailingComma
   , addFieldToRecord
   , addFieldToRecordDataDefn
+
+    -- * Imports
+  , ImportGroup (..)
+  , importGroup_loc
+  , importGroup_imports
+  , groupImports
+  , fromImportGroup
+  , singletonImportGroup
+  , consImportGroup
+  , prependToImportGroup
+  , appendToImportGroup
   )
 where
 
+import Control.Lens.At (ix)
 import Control.Lens.Cons (_head, _last)
 import Control.Lens.Fold ((^?))
-import Control.Lens.Getter ((^.))
+import Control.Lens.Getter (to, (^.))
+import Control.Lens.Lens (Lens', lens)
 import Control.Lens.Review (review, (#))
 import Control.Lens.Setter ((.~))
 import Control.Lens.Tuple (_1, _2, _5)
 import Control.Monad (guard)
 import Data.Function ((&))
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import GHC
   ( AddEpAnn (..)
@@ -250,3 +265,101 @@ recFieldRhsDelta (L _ (HsFieldBind _ext _lhs rhs _pun)) =
   case GHC.anchor_op . GHC.entry . GHC.ann $ getLoc rhs of
     UnchangedAnchor -> error "recFieldRhsDelta: UnchangedAnchor"
     MovedAnchor delta -> delta
+
+data ImportGroup = ImportGroup
+  { _importGroup_loc :: GHC.EpAnn GHC.AnnListItem
+  , _importGroup_imports :: NonEmpty (GHC.LImportDecl GhcPs)
+  }
+
+importGroup_loc :: Lens' ImportGroup (GHC.EpAnn GHC.AnnListItem)
+importGroup_loc = lens _importGroup_loc (\x a -> x{_importGroup_loc = a})
+
+importGroup_imports :: Lens' ImportGroup (NonEmpty (GHC.LImportDecl GhcPs))
+importGroup_imports = lens _importGroup_imports (\x a -> x{_importGroup_imports = a})
+
+fromImportGroup :: ImportGroup -> [GHC.LImportDecl GhcPs]
+fromImportGroup (ImportGroup loc group) =
+  NonEmpty.toList $ group & ix 0 . l_loc . ann .~ loc
+
+singletonImportGroup :: GHC.LImportDecl GhcPs -> ImportGroup
+singletonImportGroup imp =
+  ImportGroup
+    (imp ^. l_loc . ann)
+    ( NonEmpty.singleton $
+        imp
+          & l_loc . ann . _EpAnn . epAnn_entry . anchor_op
+            .~ MovedAnchor (deltaPos 0 0)
+    )
+
+consImportGroup ::
+  GHC.LImportDecl GhcPs ->
+  ImportGroup ->
+  Either (ImportGroup, ImportGroup) ImportGroup
+consImportGroup imp ig@(ImportGroup loc group) =
+  let imp' = singletonImportGroup imp
+  in case loc ^? _EpAnn . epAnn_entry . anchor_op . _MovedAnchor . to GHC.deltaLine of
+      Just l
+        | l > 1 ->
+            Left (imp', ig)
+      _ ->
+        Right $
+          ImportGroup
+            (imp' ^. importGroup_loc)
+            ((imp' ^. importGroup_imports) <> (group & ix 0 . l_loc . ann .~ loc))
+
+prependToImportGroup ::
+  GHC.ImportDecl GhcPs ->
+  ImportGroup ->
+  ImportGroup
+prependToImportGroup imp (ImportGroup loc group) =
+  ImportGroup
+    loc
+    ( L
+        ( SrcSpanAnn
+            ( EpAnn
+                generatedAnchor{GHC.anchor_op = MovedAnchor $ deltaPos 0 0}
+                (AnnListItem [])
+                emptyComments
+            )
+            generatedSrcSpan
+        )
+        imp
+        `NonEmpty.cons` ( group
+                            & ix 0 . l_loc . ann . _EpAnn . epAnn_entry . anchor_op
+                              .~ MovedAnchor (deltaPos 1 0)
+                        )
+    )
+
+appendToImportGroup ::
+  GHC.ImportDecl GhcPs ->
+  ImportGroup ->
+  ImportGroup
+appendToImportGroup imp (ImportGroup loc group) =
+  ImportGroup
+    loc
+    ( group
+        <> NonEmpty.singleton
+          ( L
+              ( SrcSpanAnn
+                  ( EpAnn
+                      generatedAnchor{GHC.anchor_op = MovedAnchor $ deltaPos 1 0}
+                      (AnnListItem [])
+                      emptyComments
+                  )
+                  generatedSrcSpan
+              )
+              imp
+          )
+    )
+
+-- | Group imports that are on consecutive lines.
+groupImports :: [GHC.LImportDecl GhcPs] -> [ImportGroup]
+groupImports [] = []
+groupImports (imp : imps) =
+  case groupImports imps of
+    [] ->
+      [singletonImportGroup imp]
+    ig : rest ->
+      case consImportGroup imp ig of
+        Left (ig1, ig2) -> ig1 : ig2 : rest
+        Right ig' -> ig' : rest

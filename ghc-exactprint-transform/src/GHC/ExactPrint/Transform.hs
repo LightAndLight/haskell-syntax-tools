@@ -170,7 +170,8 @@ addFieldToRecordDataDefn targetName (fieldName, fieldTy) decl = do
   constructors <- dataDefn ^? dd_cons . _DataTypeCons_data
   constructor <- case constructors of [c] -> pure c; _ -> Nothing
 
-  fields <- constructor ^? l_val . _ConDeclH98 . con_args . _RecCon . l_val
+  lfields <- constructor ^? l_val . _ConDeclH98 . con_args . _RecCon
+  let fields = lfields ^. l_val
 
   let
     fieldRootDelta =
@@ -185,8 +186,10 @@ addFieldToRecordDataDefn targetName (fieldName, fieldTy) decl = do
         )
 
   let
+    mOpenBraceDelta = lfields ^? l_loc . ann . _EpAnn . epAnn_entry . anchor_op . _MovedAnchor
+
     fields' =
-      addTrailingComma (deltaPos 0 0) fields
+      addTrailingComma (fromMaybe (deltaPos 0 0) mOpenBraceDelta) fields
         <> [ L
               ( SrcSpanAnn
                   (EpAnn generatedAnchor{GHC.anchor_op = MovedAnchor fieldRootDelta} (AnnListItem []) emptyComments)

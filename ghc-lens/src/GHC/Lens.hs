@@ -133,6 +133,11 @@ module GHC.Lens
     -- | c.f. 'GHC.AnchorOperation'
   , _MovedAnchor
 
+    -- ** AnnList
+
+    -- | c.f. 'GHC.AnnList'
+  , al_open
+
     -- ** EpAnn
 
     -- | c.f. 'GHC.EpAnn'
@@ -357,3 +362,6 @@ tyVarBndrVar =
           GHC.UserTyVar ext flag _ -> GHC.UserTyVar ext flag name
           GHC.KindedTyVar ext flag _ kind -> GHC.KindedTyVar ext flag name kind
     )
+
+al_open :: Lens' GHC.AnnList (Maybe GHC.AddEpAnn)
+al_open = lens GHC.al_open (\x a -> x{GHC.al_open = a})

@@ -17,11 +17,13 @@ module GHC.ExactPrint.Debug
   , debugHsDataDefn
   , debugHsDecl
   , debugHsExpr
+  , debugHsModule
   , debugHsScaled
   , debugLHsExpr
   , debugLHsQTyVars
   , debugLocatedNRdrName
   , debugSrcAnnNoEpAnns
+  , debugSrcSpan
   , debugSrcSpanAnnA
   , debugSrcSpanAnnL
   , debugTrailingAnn
@@ -36,8 +38,10 @@ module GHC.ExactPrint.Debug
 where
 
 import Data.Bool (bool)
+import Data.Proxy (Proxy (..))
 import Data.Void (absurd)
 import GHC
+import GHC.TypeLits (KnownSymbol, symbolVal)
 import GHC.Utils.Outputable hiding ((<>))
 import GHC.Utils.Outputable qualified as SDoc
 
@@ -185,18 +189,28 @@ debugEpAnn f (EpAnn anc a _comments) =
 
 debugAnchor :: Anchor -> SDoc
 debugAnchor anc =
-  case GHC.anchor_op anc of
-    UnchangedAnchor ->
-      parens (text "UnchangedAnchor" <+> ppr (anchor anc))
-    MovedAnchor delta ->
-      parens (text "MovedAnchor" <+> doubleQuotes (ppr $ anchor anc) <+> debugDeltaPos delta)
+  sexpr
+    "Anchor"
+    [ debugRealSrcSpan $ GHC.anchor anc
+    , debugAnchorOperation $ GHC.anchor_op anc
+    ]
+
+debugAnchorOperation :: AnchorOperation -> SDoc
+debugAnchorOperation UnchangedAnchor = "UnchangedAnchor"
+debugAnchorOperation (MovedAnchor delta) = parens ("MovedAnchor" <+> debugDeltaPos delta)
+
+debugRealSrcSpan :: RealSrcSpan -> SDoc
+debugRealSrcSpan = doubleQuotes . ppr
 
 debugDeltaPos :: DeltaPos -> SDoc
 debugDeltaPos delta =
-  parens (text "delta" <+> ppr (getDeltaLine delta) <+> ppr (deltaColumn delta))
+  parens (text "deltaPos" <+> ppr (getDeltaLine delta) <+> ppr (deltaColumn delta))
 
 debugLHsExpr :: LHsExpr GhcPs -> SDoc
 debugLHsExpr = debugGenLocated debugSrcSpanAnnA debugHsExpr
+
+debugSrcSpan :: SrcSpan -> SDoc
+debugSrcSpan = doubleQuotes . ppr
 
 debugSrcSpanAnnA :: SrcSpanAnnA -> SDoc
 debugSrcSpanAnnA (SrcSpanAnn epAnn _) = debugEpAnn debugAnnListItem epAnn
@@ -326,3 +340,73 @@ debugHsExpr expr =
         , debugGenLocated debugSrcSpanNoEpAnns debugFieldOcc lhs
         , debugLHsExpr rhs
         ]
+
+debugHsModule :: HsModule GhcPs -> SDoc
+debugHsModule (HsModule ext name exports imports decls) =
+  sexpr
+    "HsModule"
+    [ debugXModulePs ext
+    , debugMaybe (debugGenLocated debugSrcSpanAnnA debugModuleName) name
+    , debugMaybe
+        ( debugGenLocated
+            debugSrcSpanAnnL
+            (debugList (debugGenLocated debugSrcSpanAnnA debugIE))
+        )
+        exports
+    , debugList (debugGenLocated debugSrcSpanAnnA debugImportDecl) imports
+    , debugList (debugGenLocated debugSrcSpanAnnA debugHsDecl) decls
+    ]
+
+debugImportDecl :: ImportDecl GhcPs -> SDoc
+debugImportDecl a =
+  sexpr "ImportDecl" [todo a]
+
+debugIE :: IE GhcPs -> SDoc
+debugIE (IEVar NoExtField name) =
+  sexpr
+    "IEVar"
+    [debugGenLocated debugSrcSpanAnnA debugIEWrappedName name]
+debugIE x = todo x
+
+debugIEWrappedName :: IEWrappedName GhcPs -> SDoc
+debugIEWrappedName (IEName NoExtField name) =
+  sexpr "IEName" [debugLocatedNRdrName name]
+debugIEWrappedName a = todo a
+
+debugModuleName :: ModuleName -> SDoc
+debugModuleName = doubleQuotes . text . moduleNameString
+
+debugXModulePs :: XModulePs -> SDoc
+debugXModulePs (XModulePs ann layout _deprec _haddock) =
+  sexpr
+    "XModulePs"
+    [ debugEpAnn debugAnnsModule ann
+    , debugLayoutInfo layout
+    ]
+
+debugAnnsModule :: AnnsModule -> SDoc
+debugAnnsModule (AnnsModule main decl) =
+  sexpr
+    "AnnsModule"
+    [ debugList debugAddEpAnn main
+    , debugAnnList decl
+    ]
+
+debugLayoutInfo :: LayoutInfo GhcPs -> SDoc
+debugLayoutInfo (ExplicitBraces a b) =
+  sexpr
+    "ExplicitBraces"
+    [ debugGenLocated debugTokenLocation debugHsToken a
+    , debugGenLocated debugTokenLocation debugHsToken b
+    ]
+debugLayoutInfo (VirtualBraces n) = parens ("VirtualBraces" <+> ppr n)
+debugLayoutInfo NoLayoutInfo = "NoLayoutInfo"
+
+debugHsToken :: KnownSymbol tok => HsToken tok -> SDoc
+debugHsToken (HsTok @tok) =
+  sexpr "HsTok" [doubleQuotes $ text (symbolVal (Proxy :: Proxy tok))]
+
+debugTokenLocation :: TokenLocation -> SDoc
+debugTokenLocation NoTokenLoc = "NoTokenLoc"
+debugTokenLocation (TokenLoc loc) =
+  sexpr "TokenLoc" [debugEpaLocation loc]

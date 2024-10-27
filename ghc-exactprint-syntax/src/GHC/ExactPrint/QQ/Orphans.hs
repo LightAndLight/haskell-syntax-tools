@@ -1,6 +1,6 @@
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
 
 module GHC.ExactPrint.QQ.Orphans where
 
@@ -232,7 +232,8 @@ instance Lift GHC.Types.Name.Occurrence.OccName where
     let
       a = GHC.Types.Name.Occurrence.occNameSpace x
       b = GHC.Types.Name.Occurrence.occNameString x
-    in [||GHC.Types.Name.Occurrence.mkOccName a b||]
+    in
+      [||GHC.Types.Name.Occurrence.mkOccName a b||]
 instance Lift GHC.Types.Name.Occurrence.NameSpace where
   liftTyped x
     | GHC.Types.Name.Occurrence.isVarNameSpace x = [||GHC.Types.Name.Occurrence.varName||]

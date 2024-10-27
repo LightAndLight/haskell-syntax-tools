@@ -11,8 +11,8 @@ main =
     exactPrint
       @ParsedSource
       [hsModule|
-      module Main where
+        module Main where
 
-      x :: Int
-      x = 1
+        x :: Int
+        x = 1
       |]

@@ -60,7 +60,53 @@ debugHsDecl decl =
         "TyClD"
         [ debugTyClDecl decl'
         ]
+    SigD NoExtField sig ->
+      sexpr
+        "SigD"
+        [ debugSig sig
+        ]
     _ -> text "TODO: " <+> ppr decl
+
+debugSig :: Sig GhcPs -> SDoc
+debugSig (TypeSig ext names rest) =
+  sexpr
+    "TypeSig"
+    [ debugEpAnn debugAnnSig ext
+    , debugList debugLocatedNRdrName names
+    , debugLHsSigWcType rest
+    ]
+debugSig a = sexpr "Sig" [todo a]
+
+debugLHsSigWcType :: LHsSigWcType GhcPs -> SDoc
+debugLHsSigWcType (HsWC NoExtField body) =
+  sexpr
+    "HsWC"
+    [ debugGenLocated debugSrcSpanAnnA debugHsSigType body
+    ]
+
+debugHsSigType :: HsSigType GhcPs -> SDoc
+debugHsSigType (HsSig NoExtField bndrs body) =
+  sexpr
+    "HsSig"
+    [ debugHsOutSigTyVarBndrs bndrs
+    , debugGenLocated debugSrcSpanAnnA debugHsType body
+    ]
+
+debugHsType :: HsType GhcPs -> SDoc
+debugHsType a =
+  sexpr "HsType" [todo a]
+
+debugHsOutSigTyVarBndrs :: HsOuterSigTyVarBndrs GhcPs -> SDoc
+debugHsOutSigTyVarBndrs a =
+  sexpr "HsOuterSigTyVarBndrs" [todo a]
+
+debugAnnSig :: AnnSig -> SDoc
+debugAnnSig (AnnSig dc rest) =
+  sexpr
+    "AnnSig"
+    [ debugAddEpAnn dc
+    , debugList debugAddEpAnn rest
+    ]
 
 debugTyClDecl :: TyClDecl GhcPs -> SDoc
 debugTyClDecl decl =
@@ -246,8 +292,10 @@ debugSrcSpanAnnL :: SrcSpanAnnL -> SDoc
 debugSrcSpanAnnL (SrcSpanAnn epAnn _) = debugEpAnn debugAnnList epAnn
 
 debugAnnListItem :: AnnListItem -> SDoc
+debugAnnListItem (AnnListItem []) =
+  parens "AnnListItem"
 debugAnnListItem (AnnListItem items) =
-  foldr (($+$) . debugTrailingAnn) empty items
+  sexpr "AnnListItem" (fmap debugTrailingAnn items)
 
 debugTrailingAnn :: TrailingAnn -> SDoc
 debugTrailingAnn ta =

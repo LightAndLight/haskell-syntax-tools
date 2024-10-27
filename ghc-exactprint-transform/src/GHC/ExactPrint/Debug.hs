@@ -44,8 +44,11 @@ import GHC
 import GHC.TypeLits (KnownSymbol, symbolVal)
 import GHC.Utils.Outputable hiding ((<>))
 import GHC.Utils.Outputable qualified as SDoc
+import GHC.Types.Basic (Origin (..))
 
-sexpr :: Foldable t => SDoc -> t SDoc -> SDoc
+sexpr :: SDoc -> [SDoc] -> SDoc
+sexpr name [] =
+  parens name
 sexpr name contents =
   text "(" SDoc.<> name $+$ nest 2 (foldr ($+$) empty contents SDoc.<> text ")")
 
@@ -65,7 +68,161 @@ debugHsDecl decl =
         "SigD"
         [ debugSig sig
         ]
+    ValD NoExtField bind ->
+      sexpr
+        "ValD"
+        [ debugHsBind bind       
+        ]
     _ -> text "TODO: " <+> ppr decl
+
+debugHsBind :: HsBind GhcPs -> SDoc
+debugHsBind = debugHsBindLR
+
+debugHsBindLR :: HsBindLR GhcPs GhcPs -> SDoc
+debugHsBindLR (FunBind NoExtField name matches) =
+  sexpr
+    "FunBind"
+    [ debugLocatedNRdrName name
+    , debugMatchGroup matches
+    ]
+debugHsBindLR a = sexpr "HsBindLR" [ todo a ]
+
+debugMatchGroup :: MatchGroup GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
+debugMatchGroup (MG ext alts) =
+  sexpr
+    "MG"
+    [ debugOrigin ext
+    , debugGenLocated
+      debugSrcSpanAnnL
+      (debugList (debugGenLocated debugSrcSpanAnnA debugMatch)) alts
+    ]
+
+debugMatch :: Match GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
+debugMatch (Match ext ctxt pats grhss) =
+  sexpr
+    "Match"
+    [ debugEpAnn (debugList debugAddEpAnn) ext
+    , debugHsMatchContext ctxt
+    , debugList (debugGenLocated debugSrcSpanAnnA debugPat) pats
+    , debugGRHSs grhss
+    ]
+
+debugGRHSs :: GRHSs GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
+debugGRHSs (GRHSs ext grhss localBinds) =
+  sexpr
+    "GRHSs"
+    [ debugEpAnnComments ext
+    , debugList (debugGenLocated debugSrcAnnNoEpAnns debugGRHS) grhss
+    , debugHsLocalBinds localBinds
+    ]
+
+debugGRHS :: GRHS GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
+debugGRHS (GRHS ext guards body) =
+  sexpr
+    "GRHS"
+    [ debugEpAnn debugGrhsAnn ext
+    , debugList debugGuardLStmt guards
+    , debugLHsExpr body
+    ]
+
+debugGuardLStmt :: GuardLStmt GhcPs -> SDoc
+debugGuardLStmt =
+  debugGenLocated debugSrcSpanAnnA debugStmtLR
+
+debugStmtLR :: StmtLR GhcPs GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
+debugStmtLR a =
+  sexpr
+    "StmtLR"
+    [ todo a
+    ]
+
+debugGrhsAnn :: GrhsAnn -> SDoc
+debugGrhsAnn (GrhsAnn vb s) =
+  sexpr
+    "GrhsAnn"
+    [ debugMaybe debugEpaLocation vb
+    , debugAddEpAnn s
+    ]
+
+debugHsLocalBinds :: HsLocalBinds GhcPs -> SDoc
+debugHsLocalBinds a =
+  sexpr
+    "HsLocalBinds"
+    [ todo a
+    ]
+
+debugEpAnnComments :: EpAnnComments -> SDoc
+debugEpAnnComments (EpaComments a) =
+  sexpr
+    "EpaComments"
+    (debugLEpaComment <$> a)
+debugEpAnnComments (EpaCommentsBalanced a b) =
+  sexpr
+    "EpaCommentsBalanced"
+    [ debugList debugLEpaComment a
+    , debugList debugLEpaComment b
+    ]
+
+debugLEpaComment :: LEpaComment -> SDoc
+debugLEpaComment =
+  debugGenLocated debugAnchor debugEpaComment
+
+debugEpaComment :: EpaComment -> SDoc
+debugEpaComment (EpaComment tok prior_tok) =
+  sexpr
+    "EpaComment"
+    [ debugEpaCommentTok tok
+    , debugRealSrcSpan prior_tok
+    ]
+
+debugEpaCommentTok :: EpaCommentTok -> SDoc
+debugEpaCommentTok (EpaDocComment a) =
+  sexpr
+    "EpaDocComment"
+    [ todo a
+    ]
+debugEpaCommentTok (EpaDocOptions a) =
+  parens ("EpaDocOptions" <+> doubleQuotes (text a))
+debugEpaCommentTok (EpaLineComment a) =
+  parens ("EpaLineComment" <+> doubleQuotes (text a))
+debugEpaCommentTok (EpaBlockComment a) =
+  parens ("EpaBlockComment" <+> doubleQuotes (text a))
+debugEpaCommentTok EpaEofComment =
+  "EpaEofComment"
+
+debugPat :: Pat GhcPs -> SDoc
+debugPat a =
+  sexpr
+    "Pat"
+    [ todo a
+    ]
+
+debugHsMatchContext :: HsMatchContext GhcPs -> SDoc
+debugHsMatchContext (FunRhs fun fixity strictness) =
+  sexpr
+    "FunRhs"
+    [ debugLocatedNRdrName fun
+    , debugLexicalFixity fixity
+    , debugSrcStrictness strictness
+    ]
+debugHsMatchContext a =
+  sexpr
+    "HsMatchContext"
+    [ todo a
+    ]
+
+debugSrcStrictness :: SrcStrictness -> SDoc
+debugSrcStrictness SrcLazy = "SrcLazy"
+debugSrcStrictness SrcStrict = "SrcStrict"
+debugSrcStrictness NoSrcStrict = "NoSrcStrict"
+
+debugLexicalFixity :: LexicalFixity -> SDoc
+debugLexicalFixity Prefix = "Prefix"
+debugLexicalFixity Infix = "Infix"
+
+debugOrigin :: Origin -> SDoc
+debugOrigin FromSource = "FromSource"
+debugOrigin Generated = "Generated "
 
 debugSig :: Sig GhcPs -> SDoc
 debugSig (TypeSig ext names rest) =

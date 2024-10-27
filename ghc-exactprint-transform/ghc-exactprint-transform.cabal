@@ -27,3 +27,16 @@ library
         lens
     hs-source-dirs:   src
     default-language: GHC2021
+
+executable ghc-exactprint-dump
+    import:           warnings
+    hs-source-dirs:   ghc-exactprint-dump
+    main-is:          Main.hs
+    build-depends:
+        base ^>=4.18 && <4.19,
+        ghc >=9.6 && <9.8,
+        ghc-exactprint,
+        ghc-exactprint-transform,
+        ghc-paths,
+        optparse-applicative
+    default-language: GHC2021

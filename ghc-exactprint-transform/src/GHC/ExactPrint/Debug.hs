@@ -42,9 +42,9 @@ import Data.Proxy (Proxy (..))
 import Data.Void (absurd)
 import GHC
 import GHC.TypeLits (KnownSymbol, symbolVal)
+import GHC.Types.Basic (Origin (..))
 import GHC.Utils.Outputable hiding ((<>))
 import GHC.Utils.Outputable qualified as SDoc
-import GHC.Types.Basic (Origin (..))
 
 sexpr :: SDoc -> [SDoc] -> SDoc
 sexpr name [] =
@@ -71,7 +71,7 @@ debugHsDecl decl =
     ValD NoExtField bind ->
       sexpr
         "ValD"
-        [ debugHsBind bind       
+        [ debugHsBind bind
         ]
     _ -> text "TODO: " <+> ppr decl
 
@@ -85,7 +85,7 @@ debugHsBindLR (FunBind NoExtField name matches) =
     [ debugLocatedNRdrName name
     , debugMatchGroup matches
     ]
-debugHsBindLR a = sexpr "HsBindLR" [ todo a ]
+debugHsBindLR a = sexpr "HsBindLR" [todo a]
 
 debugMatchGroup :: MatchGroup GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc
 debugMatchGroup (MG ext alts) =
@@ -93,8 +93,9 @@ debugMatchGroup (MG ext alts) =
     "MG"
     [ debugOrigin ext
     , debugGenLocated
-      debugSrcSpanAnnL
-      (debugList (debugGenLocated debugSrcSpanAnnA debugMatch)) alts
+        debugSrcSpanAnnL
+        (debugList (debugGenLocated debugSrcSpanAnnA debugMatch))
+        alts
     ]
 
 debugMatch :: Match GhcPs (GenLocated SrcSpanAnnA (HsExpr GhcPs)) -> SDoc

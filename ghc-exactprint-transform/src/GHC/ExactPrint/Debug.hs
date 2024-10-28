@@ -517,6 +517,12 @@ debugHsExpr expr =
         [ debugEpAnn debugAnnList ext
         , debugGenLocated debugSrcSpanAnnL (debugList (debugGenLocated debugSrcSpanAnnA debugStmt)) b
         ]
+    ExplicitList ext exprs ->
+      sexpr
+        "ExplicitList"
+        [ debugEpAnn debugAnnList ext
+        , debugList debugLHsExpr exprs
+        ]
     _ -> text "TODO:" <+> ppr expr
   where
     debugStmt :: Stmt GhcPs (LHsExpr GhcPs) -> SDoc

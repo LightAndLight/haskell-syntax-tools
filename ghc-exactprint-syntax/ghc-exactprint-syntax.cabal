@@ -16,6 +16,7 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        GHC.ExactPrint.AntiQuote
         GHC.ExactPrint.QQ
         GHC.ExactPrint.QQ.Orphans
     build-depends:
@@ -23,6 +24,7 @@ library
         ghc >=9.6 && <9.8,
         ghc-exactprint,
         ghc-paths,
+        syb,
         template-haskell
     hs-source-dirs:   src
     default-language: GHC2021

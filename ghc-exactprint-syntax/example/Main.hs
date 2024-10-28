@@ -2,11 +2,11 @@
 
 module Main where
 
-import GHC.ExactPrint.QQ (ParsedSource, hsModule)
+import GHC.ExactPrint.QQ (ParsedExpr, ParsedSource, hsExpr, hsModule)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
 
 main :: IO ()
-main =
+main = do
   putStrLn $
     exactPrint
       @ParsedSource
@@ -15,4 +15,20 @@ main =
 
         x :: Int
         x = 1
+      |]
+
+  putStrLn $
+    exactPrint
+      @ParsedExpr
+      [hsExpr|MyRecord{ x = 1, y = True }|]
+
+  putStrLn $
+    exactPrint
+      @ParsedExpr
+      [hsExpr|
+      IndentedRecord
+      { x = 1
+      , y = True
+      , z = _
+      }
       |]

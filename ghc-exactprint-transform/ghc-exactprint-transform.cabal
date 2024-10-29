@@ -23,6 +23,7 @@ library
         base ^>=4.18 && <4.19,
         ghc >=9.6 && <9.8,
         ghc-exactprint,
+        ghc-exactprint-syntax,
         ghc-lens,
         lens
     hs-source-dirs:   src

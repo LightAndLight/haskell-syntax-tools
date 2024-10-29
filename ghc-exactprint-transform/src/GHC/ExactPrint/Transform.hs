@@ -4,6 +4,7 @@ module GHC.ExactPrint.Transform
   ( addTrailingComma
   , addFieldToRecord
   , addFieldToRecordDataDefn
+  , addItemToExplicitList
 
     -- * Imports
   , addImportToModule
@@ -24,6 +25,7 @@ import Control.Lens.Cons (_head, _last)
 import Control.Lens.Fold ((^?))
 import Control.Lens.Getter (to, (^.))
 import Control.Lens.Lens (Lens', lens)
+import Control.Lens.Prism (_Just)
 import Control.Lens.Review (review, (#))
 import Control.Lens.Setter (over, (.~))
 import Control.Lens.Tuple (_1, _2, _5)
@@ -63,6 +65,7 @@ import GHC
   , noSrcSpanA
   )
 import GHC qualified
+import GHC.ExactPrint.Syntax (movedAnchor)
 import GHC.Lens
 import GHC.Types.Name.Occurrence (mkVarOcc)
 import GHC.Types.Name.Reader (mkRdrUnqual)
@@ -393,3 +396,41 @@ addImportToModule theImport =
             group : groups ->
               concatMap fromImportGroup (appendToImportGroup theImport group : groups)
     )
+
+addItemToExplicitList :: HsExpr GhcPs -> LHsExpr GhcPs -> Maybe (LHsExpr GhcPs)
+addItemToExplicitList item (L loc expr) = do
+  (ex, items) <- expr ^? _ExplicitList
+
+  let
+    items' =
+      case items ^? _last of
+        Nothing ->
+          -- The list has no items. Put the item one space after the `[`.
+          [ L
+              ( GHC.SrcSpanAnn (GHC.EpAnn (movedAnchor 0 1) (GHC.AnnListItem []) GHC.emptyComments) generatedSrcSpan
+              )
+              item
+          ]
+        Just lastField ->
+          {- The list has items.
+
+            * Place a comma at the end of the current items
+              * Use the same relative position as previous commas
+              * Fall back to the location of `[`, then `deltaPos 0 0`
+            * Reuse the previous item delta
+          -}
+          let
+            mBracketDelta =
+              ex
+                ^? _EpAnn
+                  . epAnn_anns
+                  . al_open
+                  . _Just
+                  . _AddEpAnn GHC.AnnOpenS
+                  . _EpaDelta
+                  . _1
+          in
+            addTrailingComma (fromMaybe (deltaPos 0 0) mBracketDelta) items
+              ++ [L (lastField ^. l_loc) item]
+
+  pure $ L loc (review _ExplicitList (ex, items'))

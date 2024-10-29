@@ -143,6 +143,7 @@ module GHC.Lens
 
     -- | c.f. 'GHC.AnnList'
   , al_open
+  , al_close
 
     -- ** EpAnn
 
@@ -378,6 +379,9 @@ tyVarBndrVar =
 
 al_open :: Lens' GHC.AnnList (Maybe GHC.AddEpAnn)
 al_open = lens GHC.al_open (\x a -> x{GHC.al_open = a})
+
+al_close :: Lens' GHC.AnnList (Maybe GHC.AddEpAnn)
+al_close = lens GHC.al_close (\x a -> x{GHC.al_close = a})
 
 _AddEpAnn :: GHC.AnnKeywordId -> Prism' GHC.AddEpAnn GHC.EpaLocation
 _AddEpAnn keyword =

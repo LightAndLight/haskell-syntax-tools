@@ -6,6 +6,7 @@ module GHC.ExactPrint.Transform
   , addFieldToRecordDataDefn
 
     -- * Imports
+  , addImportToModule
   , ImportGroup (..)
   , importGroup_loc
   , importGroup_imports
@@ -24,7 +25,7 @@ import Control.Lens.Fold ((^?))
 import Control.Lens.Getter (to, (^.))
 import Control.Lens.Lens (Lens', lens)
 import Control.Lens.Review (review, (#))
-import Control.Lens.Setter ((.~))
+import Control.Lens.Setter (over, (.~))
 import Control.Lens.Tuple (_1, _2, _5)
 import Control.Monad (guard)
 import Data.Function ((&))
@@ -366,3 +367,29 @@ groupImports (imp : imps) =
       case consImportGroup imp ig of
         Left (ig1, ig2) -> ig1 : ig2 : rest
         Right ig' -> ig' : rest
+
+addImportToModule ::
+  GHC.ImportDecl GhcPs -> GHC.Located (GHC.HsModule GhcPs) -> GHC.Located (GHC.HsModule GhcPs)
+addImportToModule theImport =
+  over
+    (l_val . hsmodImports)
+    ( \imps ->
+        let
+          grouped = groupImports imps
+        in
+          case grouped of
+            [] ->
+              [ L
+                  ( SrcSpanAnn
+                      ( EpAnn
+                          generatedAnchor{GHC.anchor_op = MovedAnchor $ deltaPos 2 0}
+                          (AnnListItem [])
+                          emptyComments
+                      )
+                      generatedSrcSpan
+                  )
+                  theImport
+              ]
+            group : groups ->
+              concatMap fromImportGroup (appendToImportGroup theImport group : groups)
+    )

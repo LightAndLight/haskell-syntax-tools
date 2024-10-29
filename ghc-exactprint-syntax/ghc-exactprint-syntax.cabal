@@ -23,7 +23,9 @@ library
         ghc >=9.6 && <9.8,
         ghc-exactprint,
         ghc-exactprint-syntax-orphans,
+        ghc-lens,
         ghc-paths,
+        lens,
         syb,
         template-haskell
     hs-source-dirs:   src

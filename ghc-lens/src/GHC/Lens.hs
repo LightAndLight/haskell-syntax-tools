@@ -70,6 +70,7 @@ module GHC.Lens
     -- ** HsExpr
 
     -- | c.f. 'GHC.Expr'
+  , _ExplicitList
   , _RecordCon
   , RecordConArgs (..)
 
@@ -314,6 +315,12 @@ _GRHS =
   prism'
     (\(GRHSArgs a b c) -> GHC.GRHS a b c)
     (\case GHC.GRHS a b c -> Just (GRHSArgs a b c); _ -> Nothing)
+
+_ExplicitList :: Prism' (GHC.HsExpr p) (GHC.XExplicitList p, [GHC.LHsExpr p])
+_ExplicitList =
+  prism'
+    (\(a, b) -> GHC.ExplicitList a b)
+    (\case GHC.ExplicitList a b -> Just (a, b); _ -> Nothing)
 
 data RecordConArgs p = RecordConArgs
   { _rcon_ext :: GHC.XRecordCon p

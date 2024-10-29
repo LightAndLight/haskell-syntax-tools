@@ -7,29 +7,47 @@ import GHC
   , AnchorOperation (..)
   , AnnListItem (..)
   , EpAnn (..)
+  , EpaLocation (..)
   , ExprLStmt
   , GenLocated (..)
   , GhcPs
   , HsExpr (..)
+  , HsToken (..)
   , LHsExpr
   , ModuleName
   , NoExtField (..)
   , SrcSpanAnn' (SrcSpanAnn)
   , StmtLR (..)
+  , TokenLocation (..)
   , deltaPos
   , emptyComments
-  , moduleNameString, realSrcSpan
+  , moduleNameString
+  , realSrcSpan
   )
 import GHC.Types.SrcLoc (generatedSrcSpan)
 import Generics.SYB (everywhere, mkT)
 import Language.Haskell.GHC.ExactPrint.Utils (rdrName2String)
 
 substExpr :: Data a => [(String, HsExpr GhcPs)] -> a -> a
-substExpr vars = everywhere (mkT f)
+substExpr vars = everywhere (mkT go)
   where
-    f :: HsExpr GhcPs -> HsExpr GhcPs
-    f a@(HsVar _ (L _ ident)) = fromMaybe a $ lookup (rdrName2String ident) vars
-    f a = a
+    go :: HsExpr GhcPs -> HsExpr GhcPs
+    go a@(HsVar _ (L _ ident)) =
+      fromMaybe a $ lookup (rdrName2String ident) vars
+    go (HsApp a b (L c (HsApp d e f))) =
+      HsApp
+        a
+        b
+        ( L
+            c
+            ( HsPar
+                d
+                (L (TokenLoc $ EpaDelta (deltaPos 0 0) []) HsTok)
+                (L (SrcSpanAnn EpAnnNotUsed generatedSrcSpan) (HsApp EpAnnNotUsed e f))
+                (L (TokenLoc $ EpaDelta (deltaPos 0 0) []) HsTok)
+            )
+        )
+    go a = a
 
 substModuleName :: Data a => [(String, ModuleName)] -> a -> a
 substModuleName vars = everywhere (mkT f)

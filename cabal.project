@@ -1,4 +1,5 @@
 packages:
   ./ghc-lens
   ./ghc-exactprint-syntax
+  ./ghc-exactprint-syntax-orphans
   ./ghc-exactprint-transform

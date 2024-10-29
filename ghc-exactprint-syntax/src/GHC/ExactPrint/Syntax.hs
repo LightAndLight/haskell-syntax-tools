@@ -135,7 +135,7 @@ importQualified moduleName mItems =
     , GHC.ideclPkgQual = NoRawPkgQual
     , GHC.ideclSource = GHC.NotBoot
     , GHC.ideclSafe = False
-    , GHC.ideclQualified = GHC.NotQualified
+    , GHC.ideclQualified = GHC.QualifiedPre
     , GHC.ideclAs = Nothing
     , GHC.ideclImportList =
         mItems <&> \items ->

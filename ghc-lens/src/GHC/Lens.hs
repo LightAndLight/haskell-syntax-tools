@@ -124,6 +124,11 @@ module GHC.Lens
 
     -- * Exact-print annotations
 
+    -- ** AddEpAnn
+
+    -- | c.f. 'GHC.AddEpAnn'
+  , _AddEpAnn
+
     -- ** Anchor
 
     -- | c.f. 'GHC.Anchor'
@@ -373,3 +378,9 @@ tyVarBndrVar =
 
 al_open :: Lens' GHC.AnnList (Maybe GHC.AddEpAnn)
 al_open = lens GHC.al_open (\x a -> x{GHC.al_open = a})
+
+_AddEpAnn :: GHC.AnnKeywordId -> Prism' GHC.AddEpAnn GHC.EpaLocation
+_AddEpAnn keyword =
+  prism'
+    (GHC.AddEpAnn keyword)
+    (\(GHC.AddEpAnn a b) -> if a == keyword then Just b else Nothing)

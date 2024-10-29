@@ -25,7 +25,8 @@ library
         ghc-exactprint,
         ghc-exactprint-syntax,
         ghc-lens,
-        lens
+        lens,
+        syb
     hs-source-dirs:   src
     default-language: GHC2021
 

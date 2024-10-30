@@ -14,6 +14,7 @@ import GHC.Data.Strict qualified
 import GHC.Types.Basic qualified
 import GHC.Types.Fixity qualified
 import GHC.Types.ForeignCall qualified
+import GHC.Types.Name qualified
 import GHC.Types.Name.Occurrence qualified
 import GHC.Types.Name.Reader (RdrName (..))
 import GHC.Types.PkgQual qualified
@@ -226,7 +227,27 @@ deriving instance Lift GHC.AnnKeywordId
 deriving instance Lift a => Lift (GHC.WithHsDocIdentifiers a GHC.GhcPs)
 deriving instance Lift RdrName
 instance Lift GHC.Name where
-  liftTyped x = error $ "lift for Name: " <> showSDocUnsafe (ppr x)
+  liftTyped x
+    | GHC.Types.Name.isExternalName x =
+        let
+          a = GHC.Types.Name.nameUnique x
+          b = GHC.Types.Name.nameModule x
+          c = GHC.Types.Name.nameOccName x
+          d = GHC.Types.Name.nameSrcSpan x
+        in
+          [||GHC.Types.Name.mkExternalName a b c d||]
+    | otherwise = error $ "lift for Name: " <> showSDocUnsafe (ppr x) <> " " <> classify
+    where
+      classify
+        | GHC.Types.Name.isSystemName x = "system"
+        | GHC.Types.Name.isInternalName x = "internal"
+        | GHC.Types.Name.isExternalName x = "external"
+        | GHC.Types.Name.isTyVarName x = "tyVar"
+        | GHC.Types.Name.isTyConName x = "tyCon"
+        | GHC.Types.Name.isDataConName x = "dataCon"
+        | GHC.Types.Name.isValName x = "val"
+        | GHC.Types.Name.isVarName x = "var"
+        | otherwise = "unknown"
 instance Lift GHC.Types.Name.Occurrence.OccName where
   liftTyped x =
     let
@@ -246,7 +267,9 @@ deriving instance Lift GHC.Unit.Types.UnitId
 deriving instance Lift a => Lift (GHC.Unit.Types.Definite a)
 deriving instance Lift a => Lift (GHC.Unit.Types.GenInstantiatedUnit a)
 instance Lift GHC.Types.Unique.Unique where
-  liftTyped x = error $ "lift for Unique: " <> showSDocUnsafe (ppr x) -- [|| GHC.Types.Unique.mkUniqueGrimily (GHC.Types.Unique.getKey x) ||]
+  liftTyped x =
+    let a = GHC.Types.Unique.getKey x
+    in [||GHC.Types.Unique.mkUniqueGrimily a||]
 deriving instance Lift a => Lift (GHC.Unit.Types.GenUnit a)
 deriving instance Lift a => Lift (GHC.Unit.Types.GenModule a)
 deriving instance Lift GHC.ModuleName

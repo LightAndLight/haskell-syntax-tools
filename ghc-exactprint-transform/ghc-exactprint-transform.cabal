@@ -42,3 +42,24 @@ executable ghc-exactprint-dump
         ghc-paths,
         optparse-applicative
     default-language: GHC2021
+
+test-suite ghc-exactprint-transform-tests
+    type:             exitcode-stdio-1.0
+    import:           warnings
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    build-depends:
+        base ^>=4.18 && <4.19,
+        ghc,
+        ghc-exactprint,
+        ghc-exactprint-transform,
+        ghc-exactprint-syntax,
+        hspec,
+        syb
+    default-language: GHC2021
+    default-extensions:
+        -- Modern record syntax
+        DuplicateRecordFields,
+        NamedFieldPuns,
+        NoFieldSelectors,
+        OverloadedRecordDot

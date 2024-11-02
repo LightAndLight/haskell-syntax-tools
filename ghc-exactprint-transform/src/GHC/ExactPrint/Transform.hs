@@ -22,7 +22,7 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Lens.At (ix)
-import Control.Lens.Cons (_head, _last)
+import Control.Lens.Cons (_Snoc, _head, _last)
 import Control.Lens.Fold ((^?))
 import Control.Lens.Getter (to, (^.))
 import Control.Lens.Lens (Lens', lens)
@@ -383,8 +383,8 @@ addImportToModule theImport =
         let
           grouped = groupImports imps
         in
-          case grouped of
-            [] ->
+          case grouped ^? _Snoc of
+            Nothing ->
               [ L
                   ( SrcSpanAnn
                       ( EpAnn
@@ -396,8 +396,9 @@ addImportToModule theImport =
                   )
                   theImport
               ]
-            group : groups ->
-              concatMap fromImportGroup (appendToImportGroup theImport group : groups)
+            Just (groups, group) ->
+              concatMap fromImportGroup $
+                review _Snoc (groups, appendToImportGroup theImport group)
     )
 
 addItemToExplicitList :: HsExpr GhcPs -> LHsExpr GhcPs -> Maybe (LHsExpr GhcPs)

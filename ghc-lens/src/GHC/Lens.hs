@@ -116,6 +116,7 @@ module GHC.Lens
 
     -- | c.f. 'GHC.RdrName'
   , _Unqual
+  , _Qual
   , _TyConName
 
     -- ** TyClDecl
@@ -360,6 +361,9 @@ rec_dotdot = lens GHC.rec_dotdot (\x a -> x{GHC.rec_dotdot = a})
 
 _Unqual :: Prism' GHC.RdrName OccName
 _Unqual = prism' GHC.Unqual (\case GHC.Unqual a -> Just a; _ -> Nothing)
+
+_Qual :: Prism' GHC.RdrName (GHC.ModuleName, OccName)
+_Qual = prism' (uncurry GHC.Qual) (\case GHC.Qual a b -> Just (a, b); _ -> Nothing)
 
 _TcOcc :: Prism' OccName String
 _TcOcc = prism' mkTcOcc (\a -> if isTcOcc a then Just $ occNameString a else Nothing)

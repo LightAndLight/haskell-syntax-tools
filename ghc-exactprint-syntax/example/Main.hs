@@ -3,7 +3,7 @@
 module Main where
 
 import GHC.ExactPrint.AntiQuote (substExpr)
-import GHC.ExactPrint.QQ (ParsedExpr, ParsedSource, hsExpr, hsModule)
+import GHC.ExactPrint.QQ (ParsedExpr, ParsedSource, hsExpr, hsModule, unLoc)
 import Language.Haskell.GHC.ExactPrint (exactPrint)
 
 main :: IO ()
@@ -36,8 +36,8 @@ main = do
 
   putStrLn . exactPrint @ParsedExpr $
     substExpr
-      [ ("placeholder_1", [hsExpr|a b|])
-      , ("placeholder_2", [hsExpr|c + d|])
+      [ ("placeholder_1", unLoc [hsExpr|a b|])
+      , ("placeholder_2", unLoc [hsExpr|c + d|])
       ]
       [hsExpr|
       IndentedRecord

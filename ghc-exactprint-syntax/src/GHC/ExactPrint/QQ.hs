@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module GHC.ExactPrint.QQ (GHC.ParsedSource, hsModule, ParsedExpr, hsExpr) where
+module GHC.ExactPrint.QQ (GHC.ParsedSource, hsModule, ParsedExpr, hsExpr, GHC.unLoc) where
 
 import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
